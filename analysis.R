@@ -13,8 +13,8 @@ et <- read.csv("data_triads.csv", encoding = "UTF-8")
 
 # Global plotting parameters ----------------------------------------------
 
-ggtheme <- theme(text = element_text(size = 12))
-mydpi <- 450
+# defined globally in separate script
+source("global_parameters.R")
 
 
 # Prepare data for model fitting ------------------------------------------
@@ -81,8 +81,8 @@ rm(manner_language, ordered_langs)
 plot_main <- ggplot(
   et_bs, aes(x = language, y = SameManner, color = LanguageType,
              shape = LanguageType, linetype = LanguageType)) +
-  geom_jitter(alpha = .5, size = 1.5, position = position_jitter(width = .75,
-                                                               height = 0)) +
+  geom_jitter(position = position_jitter(width = .75, height = 0),
+              alpha = .5, size = 1.5) +
   stat_summary(fun.data = mean_cl_boot, geom = "errorbar", size = .75, width = .75) +
   xlab("Language") +
   ylab("Proportion of same-manner responses") +
