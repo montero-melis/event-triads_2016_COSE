@@ -17,11 +17,6 @@ source("global_parameters.R")
 # Hessian during the simulations.
 options(error = NULL)
 
-# The simulations take a lot of time to run. They have been saved to disk
-# and can be loaded:
-# load("simulations_stored.RData")
-
-
 
 # Simulation functions ----------------------------------------------------
 
@@ -479,7 +474,7 @@ fit.models2 <- function(d.sim) {
 
 # set necessary parameters
 n.lang <- 19  # number of languages
-nb.sims <- 3  # number of simulation runs; set to >5000
+nb.sims <- 3000  # number of simulation runs; set to >5000
 
 # reset data frame
 simulations_null <- data.frame()
