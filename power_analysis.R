@@ -509,6 +509,14 @@ simulations_null$Model <- factor(simulations_null$Formula,
                                    "item & speaker",
                                    "item, speaker & language")
                                  )
+# reorder factor levels
+simulations_null$Model <- factor(simulations_null$Model,
+                                 levels = c(
+                                   "item only",
+                                   "item & speaker",
+                                   "item & language",
+                                   "item, speaker & language")
+                                 )
 # show
 head(simulations_null)
 
@@ -532,7 +540,7 @@ simulations_null %>%
 simulations_null %>%
   filter(Warnings == "") %>%
   group_by(Model) %>%
-  summarise(prop.sig = round(mean(p <= .05),3), N = n())
+  summarise(percent.sig = round(100 * mean(p <= .05), 2), N = n())
 
 # plot
 simulations_null %>%
