@@ -117,8 +117,9 @@ ggsave("figures/manner-by-language.tiff", width = 7, height = 5, dpi = mydpi)
 # It is of theoretical interest to know whether response on the first
 # trial interacted with language type. We need to centre the predictors
 # to do that (this is done in the model formula).
-# Also, remove all responses to first trials from the data, because otherwise
-# we are adding undesired redundancy to the data set:
+
+# But first remove all responses to first trials from the data, because
+# otherwise we are adding undesired redundancy to the data set:
 et_tr1 <- et[et$TargetTrial != 1, ]
 
 # now fit model
@@ -132,16 +133,19 @@ fm_an2_trial1 <- glmer(SameMannerResponse ~
                        data = et_tr1, family = "binomial"
                        )
 summary(fm_an2_trial1)
-# No, there is no such interaction.
+# No, there is no interaction between LanguageType and effect of first choice.
 
+# better and shorter variable name for plotting and summarising results
+et_tr1$FirstTrial <- ifelse(et_tr1$FirstTrial.SameMannerResponse == 1,
+                            "Same-manner", "Same-path")
+
+# In the paper we offer some descriptives of the effect of first trial choice:
+et_tr1 %>%
+  group_by(FirstTrial) %>%
+  summarise(MannerChoices = mean(SameMannerResponse, na.rm = TRUE))
 
 
 # Plot results analysis 2 -------------------------------------------------
-
-
-# better and shorter variable name for plotting
-et_tr1$FirstTrial <- ifelse(et_tr1$FirstTrial.SameMannerResponse == 1,
-                            "Same-manner", "Same-path")
 
 # compute by-subject averages
 et_tr1_bs <- et_tr1 %>%

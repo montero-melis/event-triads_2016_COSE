@@ -369,7 +369,10 @@ simulations_all %>%
   summarise(runs = n(),
             fail_count = sum(Warnings != ""),
             fail_perc = round(100 * mean(Warnings != ""), 1)
-            )
+            ) %>%
+  mutate(Probabilities = gsub("\\n", " ", Probabilities)) %>%
+  write.csv(file = "figures/convergence_failures.csv", fileEncoding = "UTF-8",
+            row.names = FALSE)
 
 ## Type I/II errors -- actual power analysis
 
@@ -378,12 +381,14 @@ simulations_all %>%
 sim_valid <- simulations_all[simulations_all$Warnings == "", ]
 # unbalanced
 sim_unb <- sim_valid[sim_valid$NbLanguages == 19, ] %>%
-  group_by(Probabilities, Effect, NbLanguages) %>%
+  group_by(NbLanguages, Effect, Probabilities) %>%
   summarise(prop.sig = mean(p <= .05))
+sim_unb
 # balanced
 sim_bal <- sim_valid[sim_valid$NbLanguages != 19, ] %>%
-  group_by(Probabilities, Effect, NbLanguages) %>%
+  group_by(NbLanguages, Effect, Probabilities) %>%
   summarise(prop.sig = mean(p <= .05))
+sim_bal
 
 # plot unbalanced
 p.pow_unb <- ggplot(sim_unb, aes(x = factor(NbLanguages), y = prop.sig,
@@ -530,7 +535,13 @@ head(simulations_null)
 
 # Type I error assessment -- plot & tables --------------------------------
 
-# convergence failures
+# Overall convergence failures
+simulations_null %>%
+  summarise(conv_failure = sum(Warnings != ""),
+            total = n(),
+            conv_failure_perc = 100 * conv_failure / total)
+
+# convergence failures by model
 simulations_null %>%
   group_by(Model) %>%
   summarise(conv_failure = sum(Warnings != ""),
