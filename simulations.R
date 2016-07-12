@@ -246,6 +246,144 @@ rm(express_prob)
 
 
 
+# Type I error assessment (simulations) -----------------------------------
+
+# We want to know if our analyses were anticonservative, and also how Type I
+# errors would increase with different analyses (i.e. different models)
+
+## Function to fit model on simulated data and store output
+# (like the above fit.models but this one fits different models)
+fit.models2 <- function(d.sim) {
+  sim_df <- data.frame()
+  # use purrr:quietly to easily extract warnings and store in df
+  quiet_glmer <- purrr::quietly(glmer)
+  # models to be compared:
+  myformulae <- c(
+    "MannerChoice ~ LanguageType + (1 | Item) + (1 | SubjID) + (1 | LanguageIndex)",
+    "MannerChoice ~ LanguageType + (1 | Item) + (1 | SubjID) ",
+    "MannerChoice ~ LanguageType + (1 | Item) + (1 | LanguageIndex)",
+    "MannerChoice ~ LanguageType + (1 | Item)")
+  
+  for (myf in myformulae) {
+    print(myf)
+    quietly_output <- quiet_glmer(formula = myf, data = d.sim, family = "binomial")
+    # print any warnings
+    print(quietly_output$warnings)
+    
+    # fitted model extracted from quietly's output
+    m.tmp <- quietly_output$result
+    # Only language difference coeff is needed (estimate of intercept irrelevant)
+    curr <- data.frame(summary(m.tmp)$coef)[2, ]
+    curr$Formula <- myf
+    
+    # keep track of warnings to identify convergence problems
+    curr$Warnings <- paste(unlist(quietly_output$warnings), collapse = "; ")
+    
+    # bind together
+    sim_df <- rbind(sim_df, curr)
+  }
+  rownames(sim_df) <- NULL
+  return(sim_df)
+}
+
+# set necessary parameters
+n.lang <- 19  # number of languages
+nb.sims <- 3000  # number of simulation runs; set to >5000
+
+# reset data frame
+simulations_null <- data.frame()
+
+# run!
+ptm <- proc.time()  # keep track of running time
+# set up random data simulator as a function to be called by rdply
+d.simulator <- make.data.generator(
+  et, n.obs, n.lang, effects = effects_null, resid.var, subj.ranef.covar,
+  item.ranef.covar, lang.ranef.covar)
+# simulate data and fit models
+simulations_null <- plyr::rdply(.n = nb.sims, fit.models2(d.simulator()))
+
+# how long did the simulations take?
+t.simulations_bal <- proc.time() - ptm
+print(t.simulations_bal)
+
+head(simulations_null)
+
+
+
+# Processing of Type I error simulations ----------------------------------
+
+# give dataframe analogous shape to the simulations for power analysis above
+simulations_null$TrueEffect <- effects_null[2]
+names(simulations_null)[3:5] <- c("StdError", "z", "p")
+# column that shows the model fitted in simplified form
+simulations_null$Model <- factor(simulations_null$Formula,
+                                 labels = c(
+                                   "item only",
+                                   "item & language",
+                                   "item & participant",
+                                   "item, participant\n& language"
+                                 )
+)
+# reorder factor levels
+simulations_null$Model <- factor(simulations_null$Model,
+                                 levels = c(
+                                   "item, participant\n& language",
+                                   "item & language",
+                                   "item & participant",
+                                   "item only"
+                                 )
+)
+# show
+head(simulations_null)
+
+# # store null simulations together in a single file (might require some tweaking)
+# load("simulations_null_stored.RData")
+# simulations_null_stored <- rbind(simulations_null_stored, simulations_null)
+# simulations_null <- simulations_null_stored
+# save(simulations_null_stored, file = "simulations_null_stored.RData")
+
+
+
+# Type I error assessment -- plot & tables --------------------------------
+
+# Overall convergence failures
+simulations_null %>%
+  summarise(conv_failure = sum(Warnings != ""),
+            total = n(),
+            conv_failure_perc = 100 * conv_failure / total)
+
+# convergence failures by model
+simulations_null %>%
+  group_by(Model) %>%
+  summarise(conv_failure = sum(Warnings != ""),
+            total = n(),
+            conv_failure_perc = 100 * conv_failure / total)
+
+# data frame of type I error rates
+type1 <- simulations_null %>%
+  filter(Warnings == "") %>%
+  group_by(Model) %>%
+  summarise(prop.sig = mean(p <= .05), N = n())
+type1
+
+
+# plot
+plot_type1 <- ggplot(type1, aes(x = Model, y = prop.sig)) +
+  geom_bar(stat = "identity") +
+  ylab("Proportion of significant\ndifferences between types") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.title.y = element_text(vjust = 1)) +
+  ggtheme 
+# add horizontal line for alpha level al .05
+plot_type1 + geom_hline(aes(yintercept = .05), linetype = "dashed")
+# save to disk
+ggsave("figures/type1-errors.pdf", width = 5, height = 4)
+ggsave("figures/type1-errors.tiff", width = 5, height = 4,
+       dpi = mydpi)
+
+
+
 # Simulation keeping original sample (19 languages) -----------------------
 
 # number of languages
@@ -374,7 +512,7 @@ simulations_all %>%
   write.csv(file = "figures/convergence_failures.csv", fileEncoding = "UTF-8",
             row.names = FALSE)
 
-## Type I/II errors -- actual power analysis
+## Type II errors -- actual power analysis
 
 # Plot balanced design and unbalanced design separately.
 # Remove convergence failures
@@ -434,142 +572,3 @@ p.pow_bal + geom_hline(aes(yintercept = myY), data = mylines,
 ggsave("figures/power_analysis_balanced.pdf", width = 6.5, height = 3)
 ggsave("figures/power_analysis_balanced.tiff", width = 6.5, height = 3,
        dpi = mydpi)
-
-
-
-# Type I error assessment (simulations) -----------------------------------
-
-# We want to know if our analyses were anticonservative, and also how Type I
-# errors would increase with different analyses (i.e. different models)
-
-## Function to fit model on simulated data and store output
-# (like the above fit.models but this one fits different models)
-fit.models2 <- function(d.sim) {
-  sim_df <- data.frame()
-  # use purrr:quietly to easily extract warnings and store in df
-  quiet_glmer <- purrr::quietly(glmer)
-  # models to be compared:
-  myformulae <- c(
-    "MannerChoice ~ LanguageType + (1 | Item) + (1 | SubjID) + (1 | LanguageIndex)",
-    "MannerChoice ~ LanguageType + (1 | Item) + (1 | SubjID) ",
-    "MannerChoice ~ LanguageType + (1 | Item) + (1 | LanguageIndex)",
-    "MannerChoice ~ LanguageType + (1 | Item)")
-  
-  for (myf in myformulae) {
-    print(myf)
-    quietly_output <- quiet_glmer(formula = myf, data = d.sim, family = "binomial")
-    # print any warnings
-    print(quietly_output$warnings)
-    
-    # fitted model extracted from quietly's output
-    m.tmp <- quietly_output$result
-    # Only language difference coeff is needed (estimate of intercept irrelevant)
-    curr <- data.frame(summary(m.tmp)$coef)[2, ]
-    curr$Formula <- myf
-    
-    # keep track of warnings to identify convergence problems
-    curr$Warnings <- paste(unlist(quietly_output$warnings), collapse = "; ")
-
-    # bind together
-    sim_df <- rbind(sim_df, curr)
-  }
-  rownames(sim_df) <- NULL
-  return(sim_df)
-}
-
-# set necessary parameters
-n.lang <- 19  # number of languages
-nb.sims <- 3000  # number of simulation runs; set to >5000
-
-# reset data frame
-simulations_null <- data.frame()
-
-# run!
-ptm <- proc.time()  # keep track of running time
-# set up random data simulator as a function to be called by rdply
-d.simulator <- make.data.generator(
-  et, n.obs, n.lang, effects = effects_null, resid.var, subj.ranef.covar,
-  item.ranef.covar, lang.ranef.covar)
-# simulate data and fit models
-simulations_null <- plyr::rdply(.n = nb.sims, fit.models2(d.simulator()))
-
-# how long did the simulations take?
-t.simulations_bal <- proc.time() - ptm
-print(t.simulations_bal)
-
-head(simulations_null)
-
-
-
-# Processing of Type I error simulations ----------------------------------
-
-# give dataframe analogous shape to the simulations for power analysis above
-simulations_null$TrueEffect <- effects_null[2]
-names(simulations_null)[3:5] <- c("StdError", "z", "p")
-# column that shows the model fitted in simplified form
-simulations_null$Model <- factor(simulations_null$Formula,
-                                 labels = c(
-                                   "item only",
-                                   "item & language",
-                                   "item & participant",
-                                   "item, participant\n& language"
-                                   )
-                                 )
-# reorder factor levels
-simulations_null$Model <- factor(simulations_null$Model,
-                                 levels = c(
-                                   "item, participant\n& language",
-                                   "item & language",
-                                   "item & participant",
-                                   "item only"
-                                   )
-                                 )
-# show
-head(simulations_null)
-
-# # store null simulations together in a single file (might require some tweaking)
-# load("simulations_null_stored.RData")
-# simulations_null_stored <- rbind(simulations_null_stored, simulations_null)
-# simulations_null <- simulations_null_stored
-# save(simulations_null_stored, file = "simulations_null_stored.RData")
-
-
-
-# Type I error assessment -- plot & tables --------------------------------
-
-# Overall convergence failures
-simulations_null %>%
-  summarise(conv_failure = sum(Warnings != ""),
-            total = n(),
-            conv_failure_perc = 100 * conv_failure / total)
-
-# convergence failures by model
-simulations_null %>%
-  group_by(Model) %>%
-  summarise(conv_failure = sum(Warnings != ""),
-            total = n(),
-            conv_failure_perc = 100 * conv_failure / total)
-
-# data frame of type I error rates
-type1 <- simulations_null %>%
-  filter(Warnings == "") %>%
-  group_by(Model) %>%
-  summarise(prop.sig = mean(p <= .05), N = n())
-type1
-
-
-# plot
-plot_type1 <- ggplot(type1, aes(x = Model, y = prop.sig)) +
-  geom_bar(stat = "identity") +
-  ylab("Proportion of significant\ndifferences between types") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        axis.title.y = element_text(vjust = 1)) +
-  ggtheme 
-# add horizontal line for alpha level al .05
-plot_type1 + geom_hline(aes(yintercept = .05), linetype = "dashed")
-# save to disk
-ggsave("figures/type1-errors.pdf", width = 5, height = 4)
-ggsave("figures/type1-errors.tiff", width = 5, height = 4,
-       dpi = mydpi)
-
