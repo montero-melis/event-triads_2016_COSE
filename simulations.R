@@ -315,6 +315,7 @@ head(simulations_null)
 # give dataframe analogous shape to the simulations for power analysis above
 simulations_null$TrueEffect <- effects_null[2]
 names(simulations_null)[3:5] <- c("StdError", "z", "p")
+
 # column that shows the model fitted in simplified form
 simulations_null$Model <- factor(simulations_null$Formula,
                                  labels = c(
@@ -384,7 +385,7 @@ ggsave("figures/type1-errors.tiff", width = 5, height = 4,
 
 
 
-# Simulation keeping original sample (19 languages) -----------------------
+# Power simulation keeping original sample (19 languages) -----------------
 
 # number of languages
 n.lang <- 19
@@ -515,8 +516,9 @@ simulations_all %>%
 ## Type II errors -- actual power analysis
 
 # Plot balanced design and unbalanced design separately.
-# Remove convergence failures
-sim_valid <- simulations_all[simulations_all$Warnings == "", ]
+# Remove convergence failures and null effect simulations
+sim_valid <- simulations_all[simulations_all$Warnings == "" &
+                               simulations_all$Effect != "null effect", ]
 # unbalanced
 sim_unb <- sim_valid[sim_valid$NbLanguages == 19, ] %>%
   group_by(NbLanguages, Effect, Probabilities) %>%
@@ -529,28 +531,23 @@ sim_bal <- sim_valid[sim_valid$NbLanguages != 19, ] %>%
 sim_bal
 
 # plot unbalanced
-p.pow_unb <- ggplot(sim_unb, aes(x = factor(NbLanguages), y = prop.sig,
-                                 fill = Effect)) +
+p.pow_unb <- 
+  ggplot(sim_unb, aes(x = factor(NbLanguages), y = prop.sig, fill = Effect)) +
   geom_bar(stat = "identity", width = .5) +
   facet_grid(~ Probabilities) +
   xlab("") +
-  ylab("proportion of significant\nlanguage differences") +
+  ylab("Proportion of significant\ndifferences between types") +
   ylim(0,1) +
   theme_bw() +
   ggtheme +
   theme(axis.text.x = element_blank(),
         axis.ticks = element_blank())
 p.pow_unb
-# horizontal lines
-mylines <- data.frame(
-  Probabilities = levels(sim_unb$Probabilities),
-  myY = c(rep(.8, 3), .05))
-# add
-p.pow_unb + geom_hline(aes(yintercept = myY), data = mylines,
-                       linetype = "dashed")
+# add horizontal line to show minimum desired power
+p.pow_unb + geom_hline(aes(yintercept = .8), linetype = "dashed")
 # save plot to file
-ggsave("figures/power_analysis_unbalanced.pdf", width = 6.5, height = 3)
-ggsave("figures/power_analysis_unbalanced.tiff", width = 6.5, height = 3,
+ggsave("figures/power_analysis_unbalanced.pdf", width = 5.5, height = 3)
+ggsave("figures/power_analysis_unbalanced.tiff", width = 5.5, height = 3,
        dpi = mydpi)
 
 
@@ -560,15 +557,14 @@ p.pow_bal <- ggplot(sim_bal, aes(x = factor(NbLanguages), y = prop.sig,
   geom_bar(stat = "identity") +
   facet_grid(~ Probabilities) +
   xlab("Number of languages sampled") +
-  ylab("proportion of significant\nlanguage differences") +
+  ylab("Proportion of significant\ndifferences between types") +
   ylim(0,1) +
   theme_bw() +
   ggtheme
 p.pow_bal
 # add horizontal lines
-p.pow_bal + geom_hline(aes(yintercept = myY), data = mylines,
-                       linetype = "dashed")
+p.pow_bal + geom_hline(aes(yintercept = .8), linetype = "dashed")
 # save plot to file
-ggsave("figures/power_analysis_balanced.pdf", width = 6.5, height = 3)
-ggsave("figures/power_analysis_balanced.tiff", width = 6.5, height = 3,
+ggsave("figures/power_analysis_balanced.pdf", width = 5.5, height = 3)
+ggsave("figures/power_analysis_balanced.tiff", width = 5.5, height = 3,
        dpi = mydpi)
