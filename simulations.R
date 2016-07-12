@@ -511,16 +511,18 @@ simulations_null$Model <- factor(simulations_null$Formula,
                                  labels = c(
                                    "item only",
                                    "item & language",
-                                   "item & speaker",
-                                   "item, speaker & language")
+                                   "item & participant",
+                                   "item, participant\n& language"
+                                   )
                                  )
 # reorder factor levels
 simulations_null$Model <- factor(simulations_null$Model,
                                  levels = c(
-                                   "item only",
-                                   "item & speaker",
+                                   "item, participant\n& language",
                                    "item & language",
-                                   "item, speaker & language")
+                                   "item & participant",
+                                   "item only"
+                                   )
                                  )
 # show
 head(simulations_null)
@@ -548,14 +550,26 @@ simulations_null %>%
             total = n(),
             conv_failure_perc = 100 * conv_failure / total)
 
-simulations_null %>%
+# data frame of type I error rates
+type1 <- simulations_null %>%
   filter(Warnings == "") %>%
   group_by(Model) %>%
-  summarise(percent.sig = round(100 * mean(p <= .05), 2), N = n())
+  summarise(prop.sig = mean(p <= .05), N = n())
+type1
+
 
 # plot
-simulations_null %>%
-  filter(Warnings == "") %>%
-  group_by(Model) %>%
-  summarise(prop.sig = mean(p <= .05), N = n()) %>%
-  ggplot(aes(x = Model, y = prop.sig)) + geom_bar(stat = "identity")
+plot_type1 <- ggplot(type1, aes(x = Model, y = prop.sig)) +
+  geom_bar(stat = "identity") +
+  ylab("Proportion of significant\ndifferences between types") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.title.y = element_text(vjust = 1)) +
+  ggtheme 
+# add horizontal line for alpha level al .05
+plot_type1 + geom_hline(aes(yintercept = .05), linetype = "dashed")
+# save to disk
+ggsave("figures/type1-errors.pdf", width = 5, height = 4)
+ggsave("figures/type1-errors.tiff", width = 5, height = 4,
+       dpi = mydpi)
+
