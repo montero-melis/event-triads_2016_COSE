@@ -2,7 +2,7 @@
 # Cross the following:
 # - True effect: present or absent
 # - Language variability: high or low
-# - Speaker variability: high or low
+# - participant variability: high or low
 
 library(ggplot2)
 library(lme4)
@@ -172,7 +172,7 @@ sim$TrueEffect <- factor(sim$Effect, labels = c("null", "true"))
 sim$LangUnique <- rep(1 : (nrow(sim) / n.subj), each = n.subj)
 # this is necessary to free the x-scales when plotting
 sim$Variability <- with(
-  sim, paste(SubjectVar, " within-language speaker variability", "\n",
+  sim, paste(SubjectVar, " within-language participant variability", "\n",
              LanguageVar, " within-type language variability", sep = ""))
 sim$Variability <- factor(
   sim$Variability, levels = levels(factor(sim$Variability))[c(4, 3, 2, 1)])
