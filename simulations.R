@@ -203,12 +203,12 @@ item.ranef.covar <- summary(m)$varcor$ItemWithinScene
 lang.ranef.covar <- summary(m)$varcor$language
 resid.var <- attributes(summary(m)$varcor)$sc # sd of residuals
 
+# Desired number of observations per subject (doesn't change across simulations);
+# the number of languages will vary for the two power simulation types, however.
+n.obs <- 12
+
 # total number of simulations to run
 nb.sims <- 5  # 5000 simulations were run for the paper, takes some days
-
-# Desired number of observations per subject (doesn't change across simulations);
-# the number of languages will vary for the two simulation types, however.
-n.obs <- 12
 
 
 
@@ -288,7 +288,6 @@ fit.models2 <- function(d.sim) {
 
 # set necessary parameters
 n.lang <- 19  # number of languages
-nb.sims <- 3000  # number of simulation runs; set to >5000
 
 # reset data frame
 simulations_null <- data.frame()
@@ -323,8 +322,8 @@ simulations_null$Model <- factor(simulations_null$Formula,
                                    "item & language",
                                    "item & participant",
                                    "item, participant\n& language"
+                                   )
                                  )
-)
 # reorder factor levels
 simulations_null$Model <- factor(simulations_null$Model,
                                  levels = c(
@@ -332,8 +331,8 @@ simulations_null$Model <- factor(simulations_null$Model,
                                    "item & language",
                                    "item & participant",
                                    "item only"
+                                   )
                                  )
-)
 # show
 head(simulations_null)
 
@@ -367,7 +366,6 @@ type1 <- simulations_null %>%
   summarise(prop.sig = mean(p <= .05), N = n())
 type1
 
-
 # plot
 plot_type1 <- ggplot(type1, aes(x = Model, y = prop.sig)) +
   geom_bar(stat = "identity") +
@@ -393,7 +391,7 @@ n.lang <- 19
 ptm <- proc.time()  # keep track of running time
 # Simulate!
 simulations <- data.frame()
-for (myeffects in list(effects_null, effects_low, effects_mean, effects_upper)) {
+for (myeffects in list(effects_low, effects_mean, effects_upper)) {
   print(myeffects)
   d.simulator <- make.data.generator(
     et, n.obs, n.lang, myeffects, resid.var,subj.ranef.covar, 
@@ -426,7 +424,7 @@ for (mynblangs in n.lang) {
   print(paste("number of languages:", mynblangs))
   current_langs <- data.frame()
   
-  for (myeffects in list(effects_null, effects_low, effects_mean, effects_upper)) {
+  for (myeffects in list(effects_low, effects_mean, effects_upper)) {
     print(myeffects)
     d.simulator <- make.balanced.data.generator (
       et, n.obs, mynblangs, myeffects, resid.var,subj.ranef.covar, 
@@ -459,19 +457,12 @@ names(simulations_all)[3:5] <- c("StdError", "z", "p")
 
 # High-level labels for the effects 
 simulations_all$Effect <- factor(simulations_all$TrueEffect, labels = c(
-  "lower esimate", "null effect", "mean estimate", "upper estimate"))
+  "lower esimate", "mean estimate", "upper estimate"))
 mylookup <- data.frame(
-  Effect = factor(levels(simulations_all$Effect), levels = levels(simulations_all$Effect)),
-  Probabilities = c(prob_low, prob_null, prob_mean, prob_upper)
+  Effect = factor(levels(simulations_all$Effect),levels = levels(simulations_all$Effect)),
+  Probabilities = c(prob_low, prob_mean, prob_upper)
   )
 simulations_all <- left_join(simulations_all, mylookup)
-
-# reorder levels for plotting
-simulations_all$Effect <- factor(
-  simulations_all$Effect, levels = levels(simulations_all$Effect)[c(1,3,4,2)])
-simulations_all$Probabilities <- factor(
-  simulations_all$Probabilities, levels =
-    levels(simulations_all$Probabilities)[c(1, 3, 4, 2)])
 
 head(simulations_all)
 
