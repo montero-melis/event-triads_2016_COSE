@@ -244,6 +244,6 @@ nullplot_hline <- nullplot +
   geom_hline(aes(yintercept=M, colour=LanguageType, linetype=LanguageType),
              data = type_mean_null_emp,  size = .75)
 nullplot_hline
-# save
-ggsave("figures/simulation_null.pdf", width = 7, height = 5)
-ggsave("figures/simulation_null.tiff", width = 7, height = 5, dpi = mydpi)
+# # save
+# ggsave("figures/simulation_null.pdf", width = 7, height = 5)
+# ggsave("figures/simulation_null.tiff", width = 7, height = 5, dpi = mydpi)
