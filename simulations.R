@@ -75,7 +75,7 @@ make.data.generator <- function(d, n.obs, n.lang, effects, resid.var,
 
 # Following function samples languages in a balanced way, i.e. same amount of
 # V and S-languages, otherwise it's the same as make.data.generator()
-# (it's tremendously redundant, but quick fix for now)
+# (it's tremendously redundant, but should work)
 make.balanced.data.generator <- function(d, n.obs, n.lang, effects, resid.var,
                                          subj.ranef.covar, item.ranef.covar, 
                                          lang.ranef.covar) {
@@ -128,7 +128,8 @@ make.balanced.data.generator <- function(d, n.obs, n.lang, effects, resid.var,
 }
 
 
-## Function to fit model on simulated data and store output
+## Function to fit model on simulated data and store output;
+# it fits the full model, like in our main analysis
 fit.models <- function(d.sim) {
   # use purrr:quietly to easily extract warnings and store in df
   quietly_output <- purrr::quietly(glmer)(
@@ -153,6 +154,42 @@ fit.models <- function(d.sim) {
   
   rownames(simulation) <- NULL
   return(simulation)
+}
+
+## Function to fit four models on simulated data and store output
+# It's like the above fit.models() but this one fits different models to
+# assess Type I errors as a function of the random effects structure
+fit.models2 <- function(d.sim) {
+  sim_df <- data.frame()
+  # use purrr:quietly to easily extract warnings and store in df
+  quiet_glmer <- purrr::quietly(glmer)
+  # models to be compared:
+  myformulae <- c(
+    "MannerChoice ~ LanguageType + (1 | Item) + (1 | SubjID) + (1 | LanguageIndex)",
+    "MannerChoice ~ LanguageType + (1 | Item) + (1 | SubjID) ",
+    "MannerChoice ~ LanguageType + (1 | Item) + (1 | LanguageIndex)",
+    "MannerChoice ~ LanguageType + (1 | Item)")
+  
+  for (myf in myformulae) {
+    print(myf)
+    quietly_output <- quiet_glmer(formula = myf, data = d.sim, family = "binomial")
+    # print any warnings
+    print(quietly_output$warnings)
+    
+    # fitted model extracted from quietly's output
+    m.tmp <- quietly_output$result
+    # Only language difference coeff is needed (estimate of intercept irrelevant)
+    curr <- data.frame(summary(m.tmp)$coef)[2, ]
+    curr$Formula <- myf
+    
+    # keep track of warnings to identify convergence problems
+    curr$Warnings <- paste(unlist(quietly_output$warnings), collapse = "; ")
+    
+    # bind together
+    sim_df <- rbind(sim_df, curr)
+  }
+  rownames(sim_df) <- NULL
+  return(sim_df)
 }
 
 
@@ -208,7 +245,7 @@ resid.var <- attributes(summary(m)$varcor)$sc # sd of residuals
 n.obs <- 12
 
 # total number of simulations to run
-nb.sims <- 5  # 5000 simulations were run for the paper, takes some days
+nb.sims <- 5  # 10k simulations were run for the paper, takes several days
 
 
 
@@ -246,45 +283,10 @@ rm(express_prob)
 
 
 
-# Type I error assessment (simulations) -----------------------------------
+# Simulations to assess type I error rate ---------------------------------
 
 # We want to know if our analyses were anticonservative, and also how Type I
 # errors would increase with different analyses (i.e. different models)
-
-## Function to fit model on simulated data and store output
-# (like the above fit.models but this one fits different models)
-fit.models2 <- function(d.sim) {
-  sim_df <- data.frame()
-  # use purrr:quietly to easily extract warnings and store in df
-  quiet_glmer <- purrr::quietly(glmer)
-  # models to be compared:
-  myformulae <- c(
-    "MannerChoice ~ LanguageType + (1 | Item) + (1 | SubjID) + (1 | LanguageIndex)",
-    "MannerChoice ~ LanguageType + (1 | Item) + (1 | SubjID) ",
-    "MannerChoice ~ LanguageType + (1 | Item) + (1 | LanguageIndex)",
-    "MannerChoice ~ LanguageType + (1 | Item)")
-  
-  for (myf in myformulae) {
-    print(myf)
-    quietly_output <- quiet_glmer(formula = myf, data = d.sim, family = "binomial")
-    # print any warnings
-    print(quietly_output$warnings)
-    
-    # fitted model extracted from quietly's output
-    m.tmp <- quietly_output$result
-    # Only language difference coeff is needed (estimate of intercept irrelevant)
-    curr <- data.frame(summary(m.tmp)$coef)[2, ]
-    curr$Formula <- myf
-    
-    # keep track of warnings to identify convergence problems
-    curr$Warnings <- paste(unlist(quietly_output$warnings), collapse = "; ")
-    
-    # bind together
-    sim_df <- rbind(sim_df, curr)
-  }
-  rownames(sim_df) <- NULL
-  return(sim_df)
-}
 
 # set necessary parameters
 n.lang <- 19  # number of languages
@@ -361,7 +363,7 @@ simulations_null %>%
 
 # data frame of type I error rates
 type1 <- simulations_null %>%
-  filter(Warnings == "") %>%
+  filter(Warnings == "") %>%  # remove convergence failures
   group_by(Model) %>%
   summarise(prop.sig = mean(p <= .05), N = n())
 type1
@@ -383,7 +385,7 @@ ggsave("figures/type1-errors.tiff", width = 5, height = 4,
 
 
 
-# Power simulation keeping original sample (19 languages) -----------------
+# Power simulations keeping original sample (19 languages) ----------------
 
 # number of languages
 n.lang <- 19
@@ -412,7 +414,7 @@ head(simulations)
 
 
 
-# Simulation from balanced design -----------------------------------------
+# Power simulations from balanced design of 20, 40 & 80 languages ---------
 
 # number of languages
 n.lang <- c(20, 40, 80)
@@ -447,7 +449,7 @@ head(simulations_bal)
 
 
 
-# Processing and saving to disk -------------------------------------------
+# Processing power simulations and saving to disk -------------------------
 
 # put both simulations together into same dataframe
 simulations_all <- rbind(simulations, simulations_bal)
@@ -479,7 +481,7 @@ head(simulations_all)
 
 # Plot simulation results -------------------------------------------------
 
-# proportion of convergence failures
+# proportion of convergence failures, plotted
 p.conv <- simulations_all %>%
   group_by(Probabilities, Effect, NbLanguages) %>%
   summarise(runs = n(),
@@ -493,7 +495,8 @@ p.conv <- simulations_all %>%
 p.conv + ggtheme
 # save plot to file
 ggsave("figures/power_analysis_convergence-failures.pdf", width = 6, height = 4)
-# as table
+
+# as table rather than plot; this is how it's reported in Appendix
 simulations_all %>%
   group_by(NbLanguages, Effect, Probabilities) %>%
   summarise(runs = n(),
@@ -504,12 +507,12 @@ simulations_all %>%
   write.csv(file = "figures/convergence_failures.csv", fileEncoding = "UTF-8",
             row.names = FALSE)
 
-## Type II errors -- actual power analysis
 
-# Plot balanced design and unbalanced design separately.
-# Remove convergence failures and null effect simulations
-sim_valid <- simulations_all[simulations_all$Warnings == "" &
-                               simulations_all$Effect != "null effect", ]
+## Type II errors -- actual power analyses
+
+# We will plot balanced design and unbalanced design separately.
+# Remove convergence failures
+sim_valid <- simulations_all[simulations_all$Warnings == "", ]
 # unbalanced
 sim_unb <- sim_valid[sim_valid$NbLanguages == 19, ] %>%
   group_by(NbLanguages, Effect, Probabilities) %>%
