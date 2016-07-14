@@ -304,8 +304,8 @@ d.simulator <- make.data.generator(
 simulations_null <- plyr::rdply(.n = nb.sims, fit.models2(d.simulator()))
 
 # how long did the simulations take?
-t.simulations_bal <- proc.time() - ptm
-print(t.simulations_bal)
+t.simulations_type1 <- proc.time() - ptm
+print(t.simulations_type1)
 
 head(simulations_null)
 
@@ -404,8 +404,8 @@ for (myeffects in list(effects_low, effects_mean, effects_upper)) {
 }
 
 # how long did the simulations take?
-t.simulations <- proc.time() - ptm
-print(t.simulations)
+t.simulations_unbal <- proc.time() - ptm
+print(t.simulations_unbal)
 
 simulations$NbLanguages <- 19
 simulations$type <- "unbalanced language sample"
