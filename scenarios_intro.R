@@ -25,17 +25,17 @@ et <- read.csv("data_triads.csv", encoding = "UTF-8")
 
 ## We'll partly use some of the actual estimates
 
-# set contrasts for language type
-contrasts(et$LanguageType) <- matrix(
-  c(1,-1), nrow=2, ncol=1, byrow=F, 
-  dimnames = list(c("sattelite-framed", "verb-framed"), c("SatteliteVsVerb"))
-  )
+# use contrast coding for LanguageType
+contrasts(et$LanguageType) <- contr.sum(2)
+colnames(contrasts(et$LanguageType)) <- "Satellite_vs_Verb"
+contrasts(et$LanguageType)
+
 
 # Fit model with real data and extract coefficients
 # The model is the same one as reported in the paper
 m <- glmer(SameMannerResponse ~ 
              LanguageType +
-             (1 | language) +
+             (1 | Language) +
              (1 | Participant) +
              (1 | ItemScene) +
              (1 | ItemWithinScene),
@@ -84,7 +84,7 @@ lo_var <- 0.3
 nb.sims <- 1
 # number of languages
 n.lang <- 20
-# number of subjects per language
+# number of subjects per Language
 n.subj <- 12
 
 
@@ -190,7 +190,7 @@ lang_ord <- sim %>%
   group_by(LangUnique) %>%
   summarise(M = mean(prob))
 myorder <- lang_ord$LangUnique[order(lang_ord$M)]
-sim$language <- factor(sim$LangUnique, levels = myorder)
+sim$Language <- factor(sim$LangUnique, levels = myorder)
 rm(lang_ord, myorder)
 
 # Two data frames, one for true and one for null
@@ -200,16 +200,12 @@ data_null <- sim[sim$TrueEffect == "null", ]
 ## True effect
 # plot with jitter
 trueplot <- ggplot(
-  data_true, aes(x = language, y = prob, color = LanguageType,
+  data_true, aes(x = Language, y = prob, color = LanguageType,
                  shape = LanguageType, linetype = LanguageType)) +
   facet_wrap(~Variability, scales = "free_x") +
   geom_jitter(position = position_jitter(width = .75, height = 0),
-              alpha = .25) +
+              alpha = .15) +
   stat_summary(fun.data = mean_cl_boot, geom = "errorbar", width = .7) +
-  theme_bw() +
-  theme(axis.title.y = element_text(vjust = 1),
-        legend.position = "top",
-        axis.text.x = element_blank()) +
   xlab("Language") +
   ylab("Probability of manner-based categorization")
 trueplot
@@ -223,11 +219,15 @@ type_mean_true_emp <- data_true %>%
 trueplot_hline <- trueplot +
   geom_hline(aes(yintercept=M, colour=LanguageType, linetype=LanguageType),
              data = type_mean_true_emp)
-trueplot_hline + ggtheme
+trueplot_final <- trueplot_hline + ggtheme +
+  theme(axis.title.y = element_text(vjust = 1),
+        legend.position = "top", axis.text.x = element_blank(),
+        text = element_text(size = 11))
+trueplot_final
 
 # save
-ggsave("figures/simulation_true.pdf", width = 7, height = 5)
-ggsave("figures/simulation_true.tiff", width = 7, height = 5, dpi = mydpi)
+ggsave("figures/simulation_true.pdf", width = 6, height = 3.8)
+ggsave("figures/simulation_true.tiff", width = 6, height = 3.8, dpi = mydpi)
 
 
 ## Null effect
@@ -243,7 +243,10 @@ type_mean_null_emp <- data_null %>%
 nullplot_hline <- nullplot +
   geom_hline(aes(yintercept=M, colour=LanguageType, linetype=LanguageType),
              data = type_mean_null_emp,  size = .75)
-nullplot_hline
+nullplot_hline + ggtheme +
+  theme(axis.title.y = element_text(vjust = 1),
+        legend.position = "top", axis.text.x = element_blank())
+
 # # save
 # ggsave("figures/simulation_null.pdf", width = 7, height = 5)
 # ggsave("figures/simulation_null.tiff", width = 7, height = 5, dpi = mydpi)

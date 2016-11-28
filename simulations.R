@@ -75,7 +75,7 @@ make.data.generator <- function(d, n.obs, n.lang, effects, resid.var,
 
 # Following function samples languages in a balanced way, i.e. same amount of
 # V and S-languages, otherwise it's the same as make.data.generator()
-# (it's tremendously redundant, but should work)
+# (it's tremendously redundant, but works)
 make.balanced.data.generator <- function(d, n.obs, n.lang, effects, resid.var,
                                          subj.ranef.covar, item.ranef.covar, 
                                          lang.ranef.covar) {
@@ -200,11 +200,11 @@ fit.models2 <- function(d.sim) {
 
 # import data
 et <- read.csv("data_triads.csv", encoding = "UTF-8")
-# set contrasts for language type as in original model
-contrasts(et$LanguageType) <- matrix(
-  c(1,-1), nrow=2, ncol=1, byrow=F, 
-  dimnames = list(c("sattelite-framed", "verb-framed"), c("SatteliteVsVerb"))
-  )
+# set contrasts for language type as in original model,
+# use contrast coding
+contrasts(et$LanguageType) <- contr.sum(2)
+colnames(contrasts(et$LanguageType)) <- "Satellite_vs_Verb"
+contrasts(et$LanguageType)
 
 # Fit model with real data and extract coefficients.
 # Note the model is slightly simplified with respect to the one reported
@@ -212,7 +212,7 @@ contrasts(et$LanguageType) <- matrix(
 # not simulated)
 m <- glmer(SameMannerResponse ~ 
              LanguageType +
-             (1 | language) +
+             (1 | Language) +
              (1 | Participant) +
              (1 | ItemWithinScene),
            et, family = "binomial"
@@ -237,7 +237,7 @@ effects_null[2] <- 0  # null effect
 ## Extract random effects variance-covariance matrices
 subj.ranef.covar <- summary(m)$varcor$Participant
 item.ranef.covar <- summary(m)$varcor$ItemWithinScene
-lang.ranef.covar <- summary(m)$varcor$language
+lang.ranef.covar <- summary(m)$varcor$Language
 resid.var <- attributes(summary(m)$varcor)$sc # sd of residuals
 
 # Desired number of observations per subject (doesn't change across simulations);
@@ -245,7 +245,7 @@ resid.var <- attributes(summary(m)$varcor)$sc # sd of residuals
 n.obs <- 12
 
 # total number of simulations to run
-nb.sims <- 5  # 10k simulations were run for the paper, takes several days
+nb.sims <- 5  # 10k simulations were run for the paper, took several days
 
 
 
@@ -368,7 +368,7 @@ type1 <- simulations_null %>%
   summarise(prop.sig = mean(p <= .05), N = n())
 type1
 
-# plot
+# plot (not included in the paper)
 plot_type1 <- ggplot(type1, aes(x = Model, y = prop.sig)) +
   geom_bar(stat = "identity") +
   ylab("Proportion of significant\ndifferences between types") +
@@ -378,10 +378,11 @@ plot_type1 <- ggplot(type1, aes(x = Model, y = prop.sig)) +
   ggtheme 
 # add horizontal line for alpha level al .05
 plot_type1 + geom_hline(aes(yintercept = .05), linetype = "dashed")
-# save to disk
-ggsave("figures/type1-errors.pdf", width = 5, height = 4)
-ggsave("figures/type1-errors.tiff", width = 5, height = 4,
-       dpi = mydpi)
+
+# # save to disk
+# ggsave("figures/type1-errors.pdf", width = 5, height = 4)
+# ggsave("figures/type1-errors.tiff", width = 5, height = 4,
+#        dpi = mydpi)
 
 
 
@@ -493,8 +494,8 @@ p.conv <- simulations_all %>%
   xlab("Number of languages sampled") +
   ylab("proportion of convergence failures")
 p.conv + ggtheme
-# save plot to file
-ggsave("figures/power_analysis_convergence-failures.pdf", width = 6, height = 4)
+# # save plot to file
+# ggsave("figures/power_analysis_convergence-failures.pdf", width = 6, height = 4)
 
 # as table rather than plot; this is how it's reported in Appendix
 simulations_all %>%
@@ -503,9 +504,9 @@ simulations_all %>%
             fail_count = sum(Warnings != ""),
             fail_perc = round(100 * mean(Warnings != ""), 1)
             ) %>%
-  mutate(Probabilities = gsub("\\n", " ", Probabilities)) %>%
-  write.csv(file = "figures/convergence_failures.csv", fileEncoding = "UTF-8",
-            row.names = FALSE)
+  mutate(Probabilities = gsub("\\n", " ", Probabilities)) #%>%
+#   write.csv(file = "figures/convergence_failures.csv", fileEncoding = "UTF-8",
+#             row.names = FALSE)
 
 
 ## Type II errors -- actual power analyses
@@ -535,13 +536,14 @@ p.pow_unb <-
   theme_bw() +
   ggtheme +
   theme(axis.text.x = element_blank(),
-        axis.ticks = element_blank())
+        axis.ticks = element_blank(),
+        text = element_text(size = 11))
 p.pow_unb
 # add horizontal line to show minimum desired power
 p.pow_unb + geom_hline(aes(yintercept = .8), linetype = "dashed")
 # save plot to file
-ggsave("figures/power_analysis_unbalanced.pdf", width = 5.5, height = 3)
-ggsave("figures/power_analysis_unbalanced.tiff", width = 5.5, height = 3,
+ggsave("figures/power_analysis_unbalanced.pdf", width = 5, height = 2)
+ggsave("figures/power_analysis_unbalanced.tiff", width = 5, height = 2,
        dpi = mydpi)
 
 
@@ -557,8 +559,12 @@ p.pow_bal <- ggplot(sim_bal, aes(x = factor(NbLanguages), y = prop.sig,
   ggtheme
 p.pow_bal
 # add horizontal lines
-p.pow_bal + geom_hline(aes(yintercept = .8), linetype = "dashed")
+p.pow_bal <- p.pow_bal + geom_hline(aes(yintercept = .8), linetype = "dashed")
+# smaller font
+p.pow_bal <- p.pow_bal + theme(text = element_text(size = 11))
+p.pow_bal
+
 # save plot to file
-ggsave("figures/power_analysis_balanced.pdf", width = 5.5, height = 3)
-ggsave("figures/power_analysis_balanced.tiff", width = 5.5, height = 3,
+ggsave("figures/power_analysis_balanced.pdf", width = 5, height = 2)
+ggsave("figures/power_analysis_balanced.tiff", width = 5, height = 2,
        dpi = mydpi)

@@ -2,5 +2,5 @@
 
 # Global plotting parameters ----------------------------------------------
 
-ggtheme <- theme(text = element_text(size = 12))
+ggtheme <-   theme_bw() + theme(text = element_text(size = 12))
 mydpi <- 450
