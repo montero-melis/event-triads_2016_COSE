@@ -18,24 +18,43 @@ the analyses reported in the paper (to be uploaded to Dataverse.org).
 Content
 -------
 
-### `data_tirads.csv`
+### `data_triads.csv`
 
 Data set used for analyses. The columns/variables mean:
 
-- `LanguageType`
-- `Language`
-- `Participant`
-- `ListUnique`
-- `ListOrder`
-- `TargetTrial`
-- `Item`
-- `ItemWithinScene`
-- `ItemScene`
-- `MannerVariant`
-- `SameMannerResponse`
-- `FirstTrial.SameMannerResponse`
+- `LanguageType`: V- or S-framed language
+- `Language`: The specific language
+- `Participant`: Participant identifier, where the two first letters indicate the language
+- `ListUnique`: Identifier of one of the six unique lists
+- `ListOrder`: Each unique list was shown in either descending or ascending order
+- `TargetTrial`: This indicates the order in which the target trials where seen; there were fillers in between, but 1 means first target trial, 2 the second etc.
+- `Item`: Item identifier, see http://fieldmanuals.mpi.nl/volumes/2001/event-triads/
+- `ItemWithinScene`: This is a numeric ID for each of the 72 items
+- `ItemScene`: Denotes the ground or landmark, e.g. "tr" stands for "tree-rock"
+- `MannerVariant`: was the manner variant on the left or right
+- `SameMannerResponse`: Did participant choose the Manner (1) or the Path (0) variant? This is our main DV
+- `FirstTrial.SameMannerResponse`: What was the participant's choice on the first trial -- Manner (1) or Path (0) variant?
 
 
+### `analysis.R`
+
+Reproduces the analyses in the paper.
+
+
+### `global_parameters.R`
+
+Sets some plotting parameters that are called from the different scripts (this
+is only to ensure visual consistency between the plots)
+
+
+### `scenarios_intro.R`
+
+The simulations run to create the scenarios in the introduction.
+
+
+### `simulations.R`
+
+Simulations to estimate type I and type II errors.
 
 
 
