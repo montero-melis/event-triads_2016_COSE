@@ -89,11 +89,11 @@ plot_main <- plot_main + ggtheme +
 set.seed(562)  # make plot reproducible
 plot_main
 
-# save to disk
-set.seed(562)
-ggsave("figures/manner-by-language.pdf", width = 6, height = 3)
-set.seed(562)
-ggsave("figures/manner-by-language.tiff", width = 6, height = 3, dpi = mydpi)
+# # save figures to disk (uncomment and create necessary path)
+# set.seed(562)
+# ggsave("figures/manner-by-language.pdf", width = 6, height = 3)
+# set.seed(562)
+# ggsave("figures/manner-by-language.tiff", width = 6, height = 3, dpi = mydpi)
 
 
 

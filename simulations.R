@@ -245,7 +245,7 @@ resid.var <- attributes(summary(m)$varcor)$sc # sd of residuals
 n.obs <- 12
 
 # total number of simulations to run
-nb.sims <- 5  # 10k simulations were run for the paper, took several days
+nb.sims <- 10  # 10k simulations were run for the paper; it took several days
 
 
 
@@ -338,12 +338,6 @@ simulations_null$Model <- factor(simulations_null$Model,
 # show
 head(simulations_null)
 
-# # store null simulations together in a single file (might require some tweaking)
-# load("simulations_null_stored.RData")
-# simulations_null_stored <- rbind(simulations_null_stored, simulations_null)
-# simulations_null <- simulations_null_stored
-# save(simulations_null_stored, file = "simulations_null_stored.RData")
-
 
 
 # Type I error assessment -- plot & tables --------------------------------
@@ -379,7 +373,7 @@ plot_type1 <- ggplot(type1, aes(x = Model, y = prop.sig)) +
 # add horizontal line for alpha level al .05
 plot_type1 + geom_hline(aes(yintercept = .05), linetype = "dashed")
 
-# # save to disk
+# # save figures to disk (uncomment and create necessary path)
 # ggsave("figures/type1-errors.pdf", width = 5, height = 4)
 # ggsave("figures/type1-errors.tiff", width = 5, height = 4,
 #        dpi = mydpi)
@@ -469,13 +463,15 @@ simulations_all <- left_join(simulations_all, mylookup)
 
 head(simulations_all)
 
-## saving to disk requires tweaking if simulations are not all run at once:
 
-# # load object cotaining previous simulations if it exists
-# load("simulations_stored.RData")
-# # combine with the new simulations
-# simulations_stored <- rbind(simulations_stored, simulations_all)
-# simulations_all <- simulations_stored
+# I recommend saving the simulations to disk once they have been run,
+# because they take such a long time. That also allows you to run them
+# in several sessions and combine them -- although then you will need some
+# additional tweaking in order to combine the old and new simulations
+# (it boils down to using rbind())
+
+# # Uncomment:
+# simulations_stored <- simulations_all
 # save(simulations_stored, file = "simulations_stored.RData")
 
 
@@ -504,9 +500,7 @@ simulations_all %>%
             fail_count = sum(Warnings != ""),
             fail_perc = round(100 * mean(Warnings != ""), 1)
             ) %>%
-  mutate(Probabilities = gsub("\\n", " ", Probabilities)) #%>%
-#   write.csv(file = "figures/convergence_failures.csv", fileEncoding = "UTF-8",
-#             row.names = FALSE)
+  mutate(Probabilities = gsub("\\n", " ", Probabilities))
 
 
 ## Type II errors -- actual power analyses
@@ -541,10 +535,11 @@ p.pow_unb <-
 p.pow_unb
 # add horizontal line to show minimum desired power
 p.pow_unb + geom_hline(aes(yintercept = .8), linetype = "dashed")
-# save plot to file
-ggsave("figures/power_analysis_unbalanced.pdf", width = 5, height = 2)
-ggsave("figures/power_analysis_unbalanced.tiff", width = 5, height = 2,
-       dpi = mydpi)
+
+# # save plot to file
+# ggsave("figures/power_analysis_unbalanced.pdf", width = 5, height = 2)
+# ggsave("figures/power_analysis_unbalanced.tiff", width = 5, height = 2,
+#        dpi = mydpi)
 
 
 # plot balanced
@@ -564,7 +559,7 @@ p.pow_bal <- p.pow_bal + geom_hline(aes(yintercept = .8), linetype = "dashed")
 p.pow_bal <- p.pow_bal + theme(text = element_text(size = 11))
 p.pow_bal
 
-# save plot to file
-ggsave("figures/power_analysis_balanced.pdf", width = 5, height = 2)
-ggsave("figures/power_analysis_balanced.tiff", width = 5, height = 2,
-       dpi = mydpi)
+# # save plot to file
+# ggsave("figures/power_analysis_balanced.pdf", width = 5, height = 2)
+# ggsave("figures/power_analysis_balanced.tiff", width = 5, height = 2,
+#        dpi = mydpi)

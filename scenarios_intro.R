@@ -225,9 +225,9 @@ trueplot_final <- trueplot_hline + ggtheme +
         text = element_text(size = 11))
 trueplot_final
 
-# save
-ggsave("figures/simulation_true.pdf", width = 6, height = 3.8)
-ggsave("figures/simulation_true.tiff", width = 6, height = 3.8, dpi = mydpi)
+# # save figures to disk (uncomment and create necessary path)
+# ggsave("figures/simulation_true.pdf", width = 6, height = 3.8)
+# ggsave("figures/simulation_true.tiff", width = 6, height = 3.8, dpi = mydpi)
 
 
 ## Null effect
