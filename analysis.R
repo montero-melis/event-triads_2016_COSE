@@ -70,8 +70,8 @@ rm(manner_language, ordered_langs)
 plot_main <- ggplot(et_bs, aes(x = Language, y = SameManner, color = LanguageType,
                                shape = LanguageType, linetype = LanguageType)) +
   geom_jitter(position = position_jitter(width = .75, height = 0),
-              alpha = .4, size = 1.5) +
-  stat_summary(fun.data = mean_cl_boot, geom = "errorbar", size = .75, width = .8) +
+              alpha = .4, size = 1.25) +
+  stat_summary(fun.data = mean_cl_boot, geom = "errorbar", size = .85, width = .8) +
   ylab("Proportion of\nsame-manner responses")
 plot_main
 # compute by-type means
@@ -85,7 +85,11 @@ plot_main <- plot_main +
 # add themes
 plot_main <- plot_main + ggtheme + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        axis.title.y = element_text(vjust = 1), legend.position = "top")
+        axis.title.y = element_text(vjust = 1),
+        legend.position = "top",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())
 set.seed(562)  # make plot reproducible
 plot_main
 

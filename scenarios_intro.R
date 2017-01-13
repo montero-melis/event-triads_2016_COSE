@@ -204,7 +204,7 @@ trueplot <- ggplot(
                  shape = LanguageType, linetype = LanguageType)) +
   facet_wrap(~Variability, scales = "free_x") +
   geom_jitter(position = position_jitter(width = .75, height = 0),
-              alpha = .15) +
+              alpha = .10, size = 1) +
   stat_summary(fun.data = mean_cl_boot, geom = "errorbar", width = .7) +
   xlab("Language") +
   ylab("Probability of manner-based categorization")
@@ -222,12 +222,15 @@ trueplot_hline <- trueplot +
 trueplot_final <- trueplot_hline + ggtheme +
   theme(axis.title.y = element_text(vjust = 1),
         legend.position = "top", axis.text.x = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
         text = element_text(size = 11))
 trueplot_final
 
 # # save figures to disk (uncomment and create necessary path)
-# ggsave("figures/simulation_true.pdf", width = 6, height = 3.8)
-# ggsave("figures/simulation_true.tiff", width = 6, height = 3.8, dpi = mydpi)
+# ggsave("figures/simulation_true.pdf", width = 6, height = 4)
+# ggsave("figures/simulation_true.tiff", width = 6, height = 4, dpi = mydpi)
 
 
 ## Null effect
